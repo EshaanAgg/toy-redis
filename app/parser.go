@@ -28,12 +28,13 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState) {
 		cmd.Echo(conn, arr[1])
 	case "SET":
 		cmd.Set(conn, &state.DB, arr[1:]...)
+		streamToReplicas(state.ReplicaPorts, buf)
 	case "GET":
 		cmd.Get(conn, &state.DB, arr[1])
 	case "INFO":
 		cmd.Info(conn, state)
 	case "REPLCONF":
-		cmd.ReplConf(conn)
+		cmd.ReplConf(conn, arr[1:], state)
 	case "PSYNC":
 		cmd.Psync(conn, state.MasterReplID, state.MasterReplOffset)
 	default:

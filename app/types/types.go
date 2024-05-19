@@ -14,4 +14,5 @@ type ServerState struct {
 	MasterReplOffset int    // Offset of the master (0 if master)
 	MasterHost       string // Host of the master (empty if master)
 	MasterPort       string // Port of the master (empty if master)
+	ReplicaPorts     []int  // Ports of the replicas (empty if slave)
 }
