@@ -27,12 +27,8 @@ func (simpleString) Decode(b []byte) (string, error) {
 
 	for i := 1; i < len(b)-2; i++ {
 		if b[i] == '\r' || b[i] == '\n' {
-			return "", fmt.Errorf("invalid format for simple string: The string content contain %c", b[i])
+			return "", fmt.Errorf("invalid format for simple string: The string content contains %c, which is not allowed", b[i])
 		}
-	}
-
-	if b[len(b)-2] != '\r' || b[len(b)-1] != '\n' {
-		return "", fmt.Errorf("invalid format for simple string: Expected the last two bytes to be \\r\\n, but got %c%c", b[len(b)-2], b[len(b)-1])
 	}
 
 	return string(b[1 : len(b)-2]), nil
