@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+
+	"github.com/codecrafters-io/redis-starter-go/app/cmd"
 )
 
 func main() {
@@ -28,7 +30,7 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	buf := make([]byte, 1024)
-	db := map[string]string{}
+	db := map[string]cmd.DBItem{}
 
 	for {
 		n, err := conn.Read(buf)
