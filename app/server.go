@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -8,8 +9,23 @@ import (
 	"github.com/codecrafters-io/redis-starter-go/app/cmd"
 )
 
+type Args struct {
+	port int
+}
+
+func GetArgs() Args {
+	port := flag.Int("port", 6379, "The port on which the Redis server listens")
+	flag.Parse()
+
+	return Args{
+		port: *port,
+	}
+}
+
 func main() {
-	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	args := GetArgs()
+
+	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", args.port))
 	if err != nil {
 		fmt.Println("Failed to bind to port 6379", err)
 		os.Exit(1)
