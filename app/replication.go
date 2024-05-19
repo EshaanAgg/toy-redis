@@ -18,7 +18,15 @@ func handshakeWithMaster(server types.ServerState) {
 
 	respHandler := resp.RESPHandler{}
 
-	// Send PING to master
+	// PING
 	pingArray := respHandler.Array.Encode([]string{"PING"})
 	masterConn.Write(pingArray)
+
+	// REPLCONF listening-port <port>
+	replconfArray := respHandler.Array.Encode([]string{"REPLCONF", "listening-port", server.MasterPort})
+	masterConn.Write(replconfArray)
+
+	// REPLCONF capa psync2
+	replconfArray = respHandler.Array.Encode([]string{"REPLCONF", "capa", "psyc2"})
+	masterConn.Write(replconfArray)
 }
