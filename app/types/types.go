@@ -6,7 +6,9 @@ type DBItem struct {
 }
 
 type ServerState struct {
-	DB               map[string]DBItem
+	DB   map[string]DBItem
+	Port int
+
 	Role             string
 	MasterReplID     string
 	MasterReplOffset int

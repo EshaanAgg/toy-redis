@@ -11,7 +11,9 @@ import (
 
 func NewServerState(args *Args) *types.ServerState {
 	state := types.ServerState{
-		DB:               map[string]types.DBItem{},
+		DB:   map[string]types.DBItem{},
+		Port: args.port,
+
 		Role:             "master",
 		MasterReplID:     "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb",
 		MasterReplOffset: 0,
