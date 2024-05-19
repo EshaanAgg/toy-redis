@@ -1,8 +1,13 @@
 package cmd
 
-import "net"
+import (
+	"fmt"
+	"net"
+)
 
-func Info(con net.Conn) {
-	res := respHandler.BulkStr.Encode("role:master")
+func Info(con net.Conn, role string) {
+	replicationInfo := fmt.Sprintf("role:%s", role)
+
+	res := respHandler.BulkStr.Encode(replicationInfo)
 	con.Write(res)
 }

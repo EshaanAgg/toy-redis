@@ -11,7 +11,7 @@ import (
 
 // Asserts that the command is a valid Redis command and then calls the appropriate handler
 // The bytes should be encoded in the proper RESP format
-func handleCommand(buf []byte, conn net.Conn, db map[string]cmd.DBItem) {
+func handleCommand(buf []byte, conn net.Conn, state *ServerState) {
 	restHandler := resp.RESPHandler{}
 
 	arr, err := restHandler.DecodeCommand(buf)
@@ -26,11 +26,11 @@ func handleCommand(buf []byte, conn net.Conn, db map[string]cmd.DBItem) {
 	case "ECHO":
 		cmd.Echo(conn, arr[1])
 	case "SET":
-		cmd.Set(conn, &db, arr[1:]...)
+		cmd.Set(conn, &state.db, arr[1:]...)
 	case "GET":
-		cmd.Get(conn, &db, arr[1])
+		cmd.Get(conn, &state.db, arr[1])
 	case "INFO":
-		cmd.Info(conn)
+		cmd.Info(conn, state.role)
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -9,21 +8,26 @@ import (
 	"github.com/codecrafters-io/redis-starter-go/app/cmd"
 )
 
-type Args struct {
-	port int
+type ServerState struct {
+	db   map[string]cmd.DBItem
+	role string
 }
 
-func GetArgs() Args {
-	port := flag.Int("port", 6379, "The port on which the Redis server listens")
-	flag.Parse()
-
-	return Args{
-		port: *port,
+func NewServerState(args *Args) *ServerState {
+	state := ServerState{
+		db:   map[string]cmd.DBItem{},
+		role: "master",
 	}
+
+	if args.replicaof != "" {
+		state.role = "slave"
+	}
+	return &state
 }
 
 func main() {
 	args := GetArgs()
+	serverState := NewServerState(&args)
 
 	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", args.port))
 	if err != nil {
@@ -40,13 +44,12 @@ func main() {
 		}
 		fmt.Printf("Accepted connection from %s\n", conn.RemoteAddr().String())
 
-		go handleConnection(conn)
+		go handleConnection(conn, serverState)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, state *ServerState) {
 	buf := make([]byte, 1024)
-	db := map[string]cmd.DBItem{}
 
 	for {
 		n, err := conn.Read(buf)
@@ -56,6 +59,6 @@ func handleConnection(conn net.Conn) {
 		}
 
 		fmt.Printf("Received %d bytes: %s\n", n, buf[:n])
-		handleCommand((buf[:n]), conn, db)
+		handleCommand(buf[:n], conn, state)
 	}
 }
