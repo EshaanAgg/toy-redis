@@ -32,6 +32,8 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState) {
 		cmd.Get(conn, &state.DB, arr[1])
 	case "INFO":
 		cmd.Info(conn, state)
+	case "REPLCONF":
+		cmd.ReplConf(conn)
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}
