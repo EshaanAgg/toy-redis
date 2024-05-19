@@ -10,4 +10,6 @@ type ServerState struct {
 	Role             string
 	MasterReplID     string
 	MasterReplOffset int
+	MasterHost       string
+	MasterPort       string
 }

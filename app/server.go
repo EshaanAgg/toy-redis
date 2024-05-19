@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
@@ -18,6 +19,8 @@ func NewServerState(args *Args) *types.ServerState {
 
 	if args.replicaof != "" {
 		state.Role = "slave"
+		state.MasterHost = strings.Split(args.replicaof, " ")[0]
+		state.MasterPort = strings.Split(args.replicaof, " ")[1]
 	}
 	return &state
 }
