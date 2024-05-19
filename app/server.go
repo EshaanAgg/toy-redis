@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-
-	"github.com/codecrafters-io/redis-starter-go/app/cmd"
 )
 
 func main() {
@@ -38,6 +36,6 @@ func handleConnection(conn net.Conn) {
 		}
 
 		fmt.Printf("Received %d bytes: %s\n", n, buf[:n])
-		cmd.Ping(conn)
+		handleCommand((buf[:n]), conn)
 	}
 }
