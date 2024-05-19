@@ -8,7 +8,7 @@ import (
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func HandshakeWithMaster(server types.ServerState) {
+func handshakeWithMaster(server types.ServerState) {
 	masterConn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", server.MasterHost, server.MasterPort))
 	if err != nil {
 		fmt.Println("Failed to connect to master", err)
