@@ -5,14 +5,11 @@ import (
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-type DBItem struct {
-	value  string
-	expiry int64
-}
-
-func Set(con net.Conn, db *map[string]DBItem, arr ...string) {
+func Set(con net.Conn, db *map[string]types.DBItem, arr ...string) {
 	if len(arr) < 2 {
 		fmt.Println("Error: SET requires at least 2 arguments, which are the KEY and the VALUE")
 		return
@@ -35,7 +32,7 @@ func Set(con net.Conn, db *map[string]DBItem, arr ...string) {
 	key := arr[0]
 	value := arr[1]
 
-	(*db)[key] = DBItem{value: value, expiry: expiry}
+	(*db)[key] = types.DBItem{Value: value, Expiry: expiry}
 
 	res, err := respHandler.Str.Encode("OK")
 	if err != nil {

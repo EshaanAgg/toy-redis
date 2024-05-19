@@ -5,22 +5,19 @@ import (
 	"net"
 	"os"
 
-	"github.com/codecrafters-io/redis-starter-go/app/cmd"
+	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-type ServerState struct {
-	db   map[string]cmd.DBItem
-	role string
-}
-
-func NewServerState(args *Args) *ServerState {
-	state := ServerState{
-		db:   map[string]cmd.DBItem{},
-		role: "master",
+func NewServerState(args *Args) *types.ServerState {
+	state := types.ServerState{
+		DB:               map[string]types.DBItem{},
+		Role:             "master",
+		MasterReplID:     "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb",
+		MasterReplOffset: 0,
 	}
 
 	if args.replicaof != "" {
-		state.role = "slave"
+		state.Role = "slave"
 	}
 	return &state
 }
@@ -48,7 +45,7 @@ func main() {
 	}
 }
 
-func handleConnection(conn net.Conn, state *ServerState) {
+func handleConnection(conn net.Conn, state *types.ServerState) {
 	buf := make([]byte, 1024)
 
 	for {
