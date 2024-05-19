@@ -28,7 +28,7 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState) {
 		cmd.Echo(conn, arr[1])
 	case "SET":
 		cmd.Set(conn, &state.DB, arr[1:]...)
-		streamToReplicas(state.ReplicaPorts, buf)
+		streamToReplicas(state.ReplicaConn, buf)
 	case "GET":
 		cmd.Get(conn, &state.DB, arr[1])
 	case "INFO":

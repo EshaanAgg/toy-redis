@@ -98,15 +98,8 @@ func handshakeWithMaster(server types.ServerState) {
 	fmt.Println("Master response to PSYNC:", message)
 }
 
-func streamToReplicas(replicaPorts []int, buff []byte) {
-	for _, port := range replicaPorts {
-		replicaConn, err := net.Dial("tcp", fmt.Sprintf("0.0.0.0:%d", port))
-		if err != nil {
-			fmt.Println("Failed to connect to replica: ", err)
-			return
-		}
-		defer replicaConn.Close()
-
-		replicaConn.Write(buff)
+func streamToReplicas(replicaConn []*net.Conn, buff []byte) {
+	for _, conn := range replicaConn {
+		(*conn).Write(buff)
 	}
 }
