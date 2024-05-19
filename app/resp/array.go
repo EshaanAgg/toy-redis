@@ -12,7 +12,6 @@ func (array) Encode(arr []string) []byte {
 		byteSlice = append(byteSlice, bulkString.Encode(str)...)
 	}
 
-	byteSlice = append(byteSlice, '\r', '\n')
 	return byteSlice
 }
 
