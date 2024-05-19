@@ -4,6 +4,7 @@ type RESPHandler struct {
 	Str     simpleString
 	BulkStr bulkString
 	Array   array
+	Nil     nilValue
 }
 
 func (h RESPHandler) DecodeCommand(b []byte) ([]string, error) {

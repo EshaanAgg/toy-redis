@@ -28,6 +28,8 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	buf := make([]byte, 1024)
+	db := map[string]string{}
+
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
@@ -36,6 +38,6 @@ func handleConnection(conn net.Conn) {
 		}
 
 		fmt.Printf("Received %d bytes: %s\n", n, buf[:n])
-		handleCommand((buf[:n]), conn)
+		handleCommand((buf[:n]), conn, db)
 	}
 }
