@@ -29,6 +29,8 @@ func handleCommand(buf []byte, conn net.Conn, db map[string]cmd.DBItem) {
 		cmd.Set(conn, &db, arr[1:]...)
 	case "GET":
 		cmd.Get(conn, &db, arr[1])
+	case "INFO":
+		cmd.Info(conn)
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}
