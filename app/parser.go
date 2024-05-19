@@ -34,6 +34,8 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState) {
 		cmd.Info(conn, state)
 	case "REPLCONF":
 		cmd.ReplConf(conn)
+	case "PSYNC":
+		cmd.Psync(conn, state.MasterReplID, state.MasterReplOffset)
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}
