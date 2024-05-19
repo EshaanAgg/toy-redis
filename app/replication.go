@@ -25,6 +25,20 @@ func sendAndAssertReply(conn net.Conn, messageArr []string, expectedMsg string, 
 	return nil
 }
 
+func sendAndGetReply(conn net.Conn, messageArr []string, respHandler resp.RESPHandler) ([]string, error) {
+	bytes := respHandler.Array.Encode(messageArr)
+	conn.Write(bytes)
+
+	resp := make([]byte, 1024)
+	n, _ := conn.Read(resp)
+	msg, _, err := respHandler.Array.Decode(resp[:n])
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode response: %s", err)
+	}
+
+	return msg, nil
+}
+
 func handshakeWithMaster(server types.ServerState) {
 	masterConn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", server.MasterHost, server.MasterPort))
 	if err != nil {
@@ -70,4 +84,16 @@ func handshakeWithMaster(server types.ServerState) {
 		fmt.Println("Failed to send REPLCONF capa psync2 to master", err)
 		return
 	}
+
+	// PSYNC <replicationid> <offset>
+	message, err := sendAndGetReply(
+		masterConn,
+		[]string{"PSYNC", server.MasterReplID, fmt.Sprintf("%d", server.MasterReplOffset)},
+		respHandler,
+	)
+	if err != nil {
+		fmt.Println("Failed to send PSYNC to master", err)
+		return
+	}
+	fmt.Println("Master response to PSYNC:", message)
 }
