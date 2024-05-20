@@ -27,7 +27,7 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	switch strings.ToUpper(arr[0]) {
 
 	case "PING":
-		cmd.Ping(conn)
+		cmd.Ping(conn, isMasterCommand)
 
 	case "ECHO":
 		cmd.Echo(conn, arr[1])
@@ -53,6 +53,11 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
+	}
+
+	// If this was a command from master, update the acknowledgment offset
+	if isMasterCommand {
+		state.AckOffset += len(buf) - len(next)
 	}
 
 	// If there are more commands in the buffer, handle them

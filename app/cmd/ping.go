@@ -5,7 +5,13 @@ import (
 	"net"
 )
 
-func Ping(con net.Conn) {
+func Ping(con net.Conn, isMasterCommand bool) {
+	if isMasterCommand {
+		// If the PING command is from the master, we should not reply
+		// The master is only sending PING to check if the replica is alive
+		return
+	}
+
 	res, err := respHandler.Str.Encode("PONG")
 
 	if err != nil {

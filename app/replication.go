@@ -168,7 +168,7 @@ func handshakeWithMaster(server *types.ServerState) {
 
 	// If there are remaining bytes, handle them as a separate command
 	if len(remainingBytes) > 0 {
-		go handleCommand(remainingBytes, masterConn, server, true)
+		handleCommand(remainingBytes, masterConn, server, true)
 	}
 }
 

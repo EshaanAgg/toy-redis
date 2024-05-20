@@ -23,15 +23,15 @@ func ReplConf(conn net.Conn, args []string, serverState *types.ServerState) {
 
 	// If the command is REPLCONF GETACK *, send an ACK back to the replica
 	if len(args) >= 2 && args[0] == "GETACK" && args[1] == "*" {
-		getAck(conn)
+		getAck(conn, serverState.AckOffset)
 		return
 	}
 
 	fmt.Printf("Unknown REPLCONF command: %s\n", args)
 }
 
-func getAck(conn net.Conn) {
-	bytes := respHandler.Array.Encode([]string{"REPLCONF", "ACK", fmt.Sprintf("%d", 0)})
+func getAck(conn net.Conn, bytesOffset int) {
+	bytes := respHandler.Array.Encode([]string{"REPLCONF", "ACK", fmt.Sprintf("%d", bytesOffset)})
 	_, err := conn.Write(bytes)
 	if err != nil {
 		fmt.Println("Failed to write response ACK response to master: ", err)

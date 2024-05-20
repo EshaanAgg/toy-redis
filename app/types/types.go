@@ -21,4 +21,5 @@ type ServerState struct {
 	MasterHost       string      // Host of the master (empty if master)
 	MasterPort       string      // Port of the master (empty if master)
 	ReplicaConn      []*net.Conn // Connections to replicas (empty if slave)
+	AckOffset        int         // Offset of the last acknowledged replication message
 }

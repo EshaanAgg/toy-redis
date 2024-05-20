@@ -70,6 +70,6 @@ func handleConnection(conn net.Conn, state *types.ServerState, isMasterConnectio
 		}
 
 		fmt.Printf("Received %d bytes: %q\n", n, buf[:n])
-		go handleCommand(buf[:n], conn, state, isMasterConnection)
+		handleCommand(buf[:n], conn, state, isMasterConnection)
 	}
 }
