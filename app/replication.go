@@ -30,7 +30,7 @@ func sendAndAssertReply(conn net.Conn, messageArr []string, expectedMsg string, 
 	return nil
 }
 
-func sendAndGetRBDFile(conn net.Conn, messageArr []string, respHandler resp.RESPHandler, state *types.ServerState) (string, error) {
+func sendAndGetRBDFile(conn net.Conn, messageArr []string, respHandler resp.RESPHandler, state *types.ServerState) (string, []byte, error) {
 	bytes := respHandler.Array.Encode(messageArr)
 	conn.Write(bytes)
 
@@ -38,39 +38,71 @@ func sendAndGetRBDFile(conn net.Conn, messageArr []string, respHandler resp.RESP
 	resp := make([]byte, 1024)
 	n, err := conn.Read(resp)
 	if err != nil {
-		return "", fmt.Errorf("failed to recieve message from master: %s", err)
+		return "", nil, fmt.Errorf("failed to recieve message from master: %s", err)
 	}
 	psyncResp, rdbBytes, err := respHandler.Str.Decode(resp[:n])
 	if err != nil {
-		return "", fmt.Errorf("failed to decode response: %s", err)
+		return "", nil, fmt.Errorf("failed to decode response: %s", err)
 	}
 
 	// Parse the PSYNC response
 	responseParts := strings.Split(psyncResp, " ")
 	if len(responseParts) != 3 {
-		return "", fmt.Errorf("expected 3 parts in PSYNC response, got %d", len(responseParts))
+		return "", nil, fmt.Errorf("expected 3 parts in PSYNC response, got %d", len(responseParts))
 	}
 	if responseParts[0] != "FULLRESYNC" {
-		return "", fmt.Errorf("expected FULLRESYNC in PSYNC response, got %s", responseParts[0])
+		return "", nil, fmt.Errorf("expected FULLRESYNC in PSYNC response, got %s", responseParts[0])
 	}
 	state.MasterReplID = responseParts[1]
 	portAsInt, err := strconv.Atoi(responseParts[2])
 	if err != nil {
-		return "", fmt.Errorf("failed to convert port to int: %s", err)
+		return "", nil, fmt.Errorf("failed to convert port to int: %s", err)
 	}
 	state.MasterReplOffset = portAsInt
 
-	if rdbBytes == nil {
+	if len(rdbBytes) == 0 {
 		// Get the RDB file
 		rdbBytes = make([]byte, 1024)
 		n, err = conn.Read(rdbBytes)
 		if err != nil {
-			return "", fmt.Errorf("failed to recieve message from master: %s", err)
+			return "", nil, fmt.Errorf("failed to recieve message from master: %s", err)
 		}
+		rdbBytes = rdbBytes[:n]
 	}
-	fileContent := string(rdbBytes[:n])
+	fileContent, remainingBytes, err := parseFileContent(rdbBytes)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to parse RDB file: %s", err)
+	}
 
-	return fileContent, nil
+	return fileContent, remainingBytes, nil
+}
+
+func parseFileContent(dataBytes []byte) (string, []byte, error) {
+	if dataBytes[0] != '$' {
+		return "", nil, fmt.Errorf("expected $ at the start of the datafile, got %s", string(dataBytes[0]))
+	}
+
+	// Parse the length of the data
+	lenStr := ""
+	for i := 1; i < len(dataBytes); i++ {
+		if dataBytes[i] == '\r' {
+			break
+		}
+		lenStr += string(dataBytes[i])
+	}
+	dataLen, err := strconv.Atoi(lenStr)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to convert data length to int: %s", err)
+	}
+
+	startIndex := len(lenStr) + 3 // $<len>\r\n
+	if len(dataBytes) < startIndex+dataLen {
+		return "", nil, fmt.Errorf("expected %d bytes of data, got %d", dataLen, len(dataBytes)-startIndex)
+	}
+	fileContentBytes := dataBytes[startIndex : startIndex+dataLen]
+	remainingBytes := dataBytes[startIndex+dataLen:]
+
+	return string(fileContentBytes), remainingBytes, nil
 }
 
 func handshakeWithMaster(server *types.ServerState) {
@@ -119,7 +151,7 @@ func handshakeWithMaster(server *types.ServerState) {
 	}
 
 	// PSYNC <replicationid> <offset>
-	rdbFile, err := sendAndGetRBDFile(
+	rdbFile, remainingBytes, err := sendAndGetRBDFile(
 		masterConn,
 		[]string{"PSYNC", "?", fmt.Sprintf("%d", -1)},
 		respHandler,
@@ -133,6 +165,11 @@ func handshakeWithMaster(server *types.ServerState) {
 
 	// Since the handshake was successful, we can now set handle the master connection in a separate goroutine
 	go handleConnection(masterConn, server, true)
+
+	// If there are remaining bytes, handle them as a separate command
+	if len(remainingBytes) > 0 {
+		go handleCommand(remainingBytes, masterConn, server, true)
+	}
 }
 
 func streamToReplicas(replicaConn []*net.Conn, buff []byte) {
