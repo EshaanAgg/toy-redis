@@ -17,7 +17,7 @@ func (array) Encode(arr []string) []byte {
 
 func (array) Decode(b []byte) ([]string, []byte, error) {
 	if b[0] != '*' {
-		return nil, b, fmt.Errorf("invalid format for array: expected the first byte to be '*', got '%c'", b[0])
+		return nil, b, fmt.Errorf("invalid format for array: expected the first byte to be '*', got '%q'", b[0])
 	}
 
 	n, b, err := parseLen(b[1:])

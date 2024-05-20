@@ -8,7 +8,7 @@ func (simpleString) Encode(s string) ([]byte, error) {
 	// The string must not contain \r or \n
 	for i := 0; i < len(s); i++ {
 		if s[i] == '\n' || s[i] == '\r' {
-			return nil, fmt.Errorf("invalid character in simple string: %c", s[i])
+			return nil, fmt.Errorf("invalid character in simple string: %q", s[i])
 		}
 	}
 

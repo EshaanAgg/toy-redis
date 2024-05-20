@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Set(con net.Conn, db *map[string]types.DBItem, shouldReply bool, arr ...string) {
+func Set(con net.Conn, db *map[string]types.DBItem, mutex *sync.Mutex, shouldReply bool, arr ...string) {
 	if len(arr) < 2 {
 		fmt.Println("Error: SET requires at least 2 arguments, which are the KEY and the VALUE")
 		return
@@ -28,6 +29,9 @@ func Set(con net.Conn, db *map[string]types.DBItem, shouldReply bool, arr ...str
 		}
 		expiry = time.Now().UnixMilli() + n
 	}
+
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	key := arr[0]
 	value := arr[1]

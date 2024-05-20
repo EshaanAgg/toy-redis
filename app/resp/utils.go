@@ -10,7 +10,7 @@ func checkLastTwoBytes(b []byte) error {
 	if b[len(b)-2] == '\r' && b[len(b)-1] == '\n' {
 		return nil
 	}
-	return fmt.Errorf("invalid format for simple string: Expected the last two bytes to be \\r\\n, but got %c%c", b[len(b)-2], b[len(b)-1])
+	return fmt.Errorf("invalid format for simple string: expected the last two bytes to be \\r\\n, but got %q", b[len(b)-1:])
 }
 
 // Parses the length of the string from the byte slice and returns the length and the remaining byte slice
@@ -35,7 +35,7 @@ func parseLen(b []byte) (int, []byte, error) {
 // and returns the remaining byte slice
 func parseCRLF(b []byte) ([]byte, error) {
 	if b[0] != '\r' || b[1] != '\n' {
-		return nil, fmt.Errorf("expected the next two bytes to be \\r\\n, got %c%c", b[0], b[1])
+		return nil, fmt.Errorf("expected the next two bytes to be \\r\\n, got %q", b[0:2])
 	}
 
 	return b[2:], nil

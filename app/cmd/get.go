@@ -2,13 +2,18 @@ package cmd
 
 import (
 	"net"
+	"sync"
 	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Get(con net.Conn, db *map[string]types.DBItem, key string) {
+func Get(con net.Conn, db *map[string]types.DBItem, mutex *sync.Mutex, key string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	value, ok := (*db)[key]
+
 	if !ok {
 		res := respHandler.Nil.Encode()
 		con.Write(res)

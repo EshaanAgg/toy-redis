@@ -23,13 +23,10 @@ func Psync(conn net.Conn, replID string, offset int) {
 		fmt.Println("Failed to decode hex", err)
 		return
 	}
-	messageParts := [][]byte{
-		[]byte("$"),
-		[]byte(fmt.Sprintf("%d", len(emptyRBDFileBytes))),
-		[]byte("\r\n"),
-		emptyRBDFileBytes,
-	}
-	for _, part := range messageParts {
-		conn.Write(part)
-	}
+
+	message := []byte("$")
+	message = append(message, []byte(fmt.Sprintf("%d", len(emptyRBDFileBytes)))...)
+	message = append(message, []byte("\r\n")...)
+	message = append(message, emptyRBDFileBytes...)
+	conn.Write(message)
 }

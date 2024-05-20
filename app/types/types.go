@@ -1,6 +1,9 @@
 package types
 
-import "net"
+import (
+	"net"
+	"sync"
+)
 
 type DBItem struct {
 	Value  string
@@ -8,8 +11,9 @@ type DBItem struct {
 }
 
 type ServerState struct {
-	DB   map[string]DBItem
-	Port int
+	DB      map[string]DBItem
+	DBMutex sync.Mutex
+	Port    int
 
 	Role             string      // master | slave
 	MasterReplID     string      // Replication ID of the master (own replication ID if master)

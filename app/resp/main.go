@@ -7,7 +7,7 @@ type RESPHandler struct {
 	Nil     nilValue
 }
 
-func (h RESPHandler) DecodeCommand(b []byte) ([]string, error) {
-	arr, _, err := h.Array.Decode(b)
-	return arr, err
+func (h RESPHandler) DecodeCommand(b []byte) ([]string, []byte, error) {
+	arr, next, err := h.Array.Decode(b)
+	return arr, next, err
 }

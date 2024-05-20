@@ -68,13 +68,12 @@ func sendAndGetRBDFile(conn net.Conn, messageArr []string, respHandler resp.RESP
 	return fileContent, nil
 }
 
-func handshakeWithMaster(server types.ServerState) {
+func handshakeWithMaster(server *types.ServerState) {
 	masterConn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", server.MasterHost, server.MasterPort))
 	if err != nil {
-		fmt.Println("Failed to connect to master", err)
+		fmt.Println("Failed to connect to master: ", err)
 		return
 	}
-	defer masterConn.Close()
 
 	respHandler := resp.RESPHandler{}
 
@@ -86,7 +85,7 @@ func handshakeWithMaster(server types.ServerState) {
 		respHandler,
 	)
 	if err != nil {
-		fmt.Println("Failed to send PING to master", err)
+		fmt.Println("Failed to send PING to master: ", err)
 		return
 	}
 
@@ -98,7 +97,7 @@ func handshakeWithMaster(server types.ServerState) {
 		respHandler,
 	)
 	if err != nil {
-		fmt.Println("Failed to send REPLCONF listening-port to master", err)
+		fmt.Println("Failed to send REPLCONF listening-port to master: ", err)
 		return
 	}
 
@@ -110,7 +109,7 @@ func handshakeWithMaster(server types.ServerState) {
 		respHandler,
 	)
 	if err != nil {
-		fmt.Println("Failed to send REPLCONF capa psync2 to master", err)
+		fmt.Println("Failed to send REPLCONF capa psync2 to master: ", err)
 		return
 	}
 
@@ -119,30 +118,24 @@ func handshakeWithMaster(server types.ServerState) {
 		masterConn,
 		[]string{"PSYNC", "?", fmt.Sprintf("%d", -1)},
 		respHandler,
-		&server,
+		server,
 	)
 	if err != nil {
 		fmt.Println("Failed to send PSYNC to master: ", err)
 		return
 	}
-	fmt.Println("RDB File content: ", rdbFile)
+	fmt.Printf("RDB File content: %q\n", rdbFile)
+
+	// Since the handshake was successful, we can now set handle the master connection in a separate goroutine
+	go handleConnection(masterConn, server, true)
 }
 
 func streamToReplicas(replicaConn []*net.Conn, buff []byte) {
-	fmt.Printf("Streaming recieved command to replicas (%d)\n", len(replicaConn))
+	fmt.Printf("Streaming recieved command to %d replicas\n", len(replicaConn))
 	for _, conn := range replicaConn {
 		_, err := (*conn).Write(buff)
 		if err != nil {
 			fmt.Printf("Failed to stream to replica %s: %s", (*conn).RemoteAddr().String(), err.Error())
 		}
 	}
-}
-
-func shouldReply(conn *net.Conn, serverState *types.ServerState) bool {
-	// If the command is from master, then we should not reply as it is a propogated command
-	connectionHost := (*conn).RemoteAddr().String()
-	connectionPort := (*conn).LocalAddr().String()
-	fmt.Println("Connection Host:", connectionHost)
-	fmt.Println("Connection Port:", connectionPort)
-	return true
 }

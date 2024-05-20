@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -25,7 +26,7 @@ func NewServerState(args *Args) *types.ServerState {
 		state.MasterPort = strings.Split(args.replicaof, " ")[1]
 		state.MasterReplID = "?"
 		state.MasterReplOffset = -1
-		handshakeWithMaster(state)
+		handshakeWithMaster(&state)
 	}
 	return &state
 }
@@ -47,23 +48,28 @@ func main() {
 			fmt.Println("Error accepting connection: ", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Accepted connection from %s\n", conn.RemoteAddr().String())
+		fmt.Printf("Accepted connection from %s\n", conn.LocalAddr().String())
 
-		go handleConnection(conn, serverState)
+		go handleConnection(conn, serverState, false)
 	}
 }
 
-func handleConnection(conn net.Conn, state *types.ServerState) {
-	buf := make([]byte, 1024)
+func handleConnection(conn net.Conn, state *types.ServerState, isMasterConnection bool) {
+	defer conn.Close()
 
 	for {
+		buf := make([]byte, 1024)
 		n, err := conn.Read(buf)
 		if err != nil {
+			if err == io.EOF {
+				fmt.Printf("Connection closed to %s\n", conn.LocalAddr().String())
+				return
+			}
 			fmt.Println("Error reading:", err)
 			return
 		}
 
-		fmt.Printf("Received %d bytes: %s\n", n, buf[:n])
-		go handleCommand(buf[:n], conn, state)
+		fmt.Printf("Received %d bytes: %q\n", n, buf[:n])
+		go handleCommand(buf[:n], conn, state, isMasterConnection)
 	}
 }
