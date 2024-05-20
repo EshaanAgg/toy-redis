@@ -64,6 +64,6 @@ func handleConnection(conn net.Conn, state *types.ServerState) {
 		}
 
 		fmt.Printf("Received %d bytes: %s\n", n, buf[:n])
-		handleCommand(buf[:n], conn, state)
+		go handleCommand(buf[:n], conn, state)
 	}
 }

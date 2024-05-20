@@ -9,7 +9,7 @@ import (
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Set(con net.Conn, db *map[string]types.DBItem, arr ...string) {
+func Set(con net.Conn, db *map[string]types.DBItem, shouldReply bool, arr ...string) {
 	if len(arr) < 2 {
 		fmt.Println("Error: SET requires at least 2 arguments, which are the KEY and the VALUE")
 		return
@@ -34,10 +34,12 @@ func Set(con net.Conn, db *map[string]types.DBItem, arr ...string) {
 
 	(*db)[key] = types.DBItem{Value: value, Expiry: expiry}
 
-	res, err := respHandler.Str.Encode("OK")
-	if err != nil {
-		fmt.Printf("Error encoding response: %s\n", err)
-		return
+	if shouldReply {
+		res, err := respHandler.Str.Encode("OK")
+		if err != nil {
+			fmt.Printf("Error encoding response: %s\n", err)
+			return
+		}
+		con.Write(res)
 	}
-	con.Write(res)
 }

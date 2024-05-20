@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/app/resp"
 	"github.com/codecrafters-io/redis-starter-go/app/types"
@@ -25,18 +27,45 @@ func sendAndAssertReply(conn net.Conn, messageArr []string, expectedMsg string, 
 	return nil
 }
 
-func sendAndGetReply(conn net.Conn, messageArr []string, respHandler resp.RESPHandler) ([]string, error) {
+func sendAndGetRBDFile(conn net.Conn, messageArr []string, respHandler resp.RESPHandler, state *types.ServerState) (string, error) {
 	bytes := respHandler.Array.Encode(messageArr)
 	conn.Write(bytes)
 
+	// Get the initial PSYNC response
 	resp := make([]byte, 1024)
-	n, _ := conn.Read(resp)
-	msg, _, err := respHandler.Array.Decode(resp[:n])
+	n, err := conn.Read(resp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode response: %s", err)
+		return "", fmt.Errorf("failed to recieve message from master: %s", err)
+	}
+	psyncResp, err := respHandler.Str.Decode(resp[:n])
+	if err != nil {
+		return "", fmt.Errorf("failed to decode response: %s", err)
 	}
 
-	return msg, nil
+	// Parse the PSYNC response
+	responseParts := strings.Split(psyncResp, " ")
+	if len(responseParts) != 3 {
+		return "", fmt.Errorf("expected 3 parts in PSYNC response, got %d", len(responseParts))
+	}
+	if responseParts[0] != "FULLRESYNC" {
+		return "", fmt.Errorf("expected FULLRESYNC in PSYNC response, got %s", responseParts[0])
+	}
+	state.MasterReplID = responseParts[1]
+	portAsInt, err := strconv.Atoi(responseParts[2])
+	if err != nil {
+		return "", fmt.Errorf("failed to convert port to int: %s", err)
+	}
+	state.MasterReplOffset = portAsInt
+
+	// Get the RDB file
+	rdbBytes := make([]byte, 1024)
+	n, err = conn.Read(rdbBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to recieve message from master: %s", err)
+	}
+	fileContent := string(rdbBytes[:n])
+
+	return fileContent, nil
 }
 
 func handshakeWithMaster(server types.ServerState) {
@@ -86,20 +115,34 @@ func handshakeWithMaster(server types.ServerState) {
 	}
 
 	// PSYNC <replicationid> <offset>
-	message, err := sendAndGetReply(
+	rdbFile, err := sendAndGetRBDFile(
 		masterConn,
-		[]string{"PSYNC", server.MasterReplID, fmt.Sprintf("%d", server.MasterReplOffset)},
+		[]string{"PSYNC", "?", fmt.Sprintf("%d", -1)},
 		respHandler,
+		&server,
 	)
 	if err != nil {
-		fmt.Println("Failed to send PSYNC to master", err)
+		fmt.Println("Failed to send PSYNC to master: ", err)
 		return
 	}
-	fmt.Println("Master response to PSYNC:", message)
+	fmt.Println("RDB File content: ", rdbFile)
 }
 
 func streamToReplicas(replicaConn []*net.Conn, buff []byte) {
+	fmt.Printf("Streaming recieved command to replicas (%d)\n", len(replicaConn))
 	for _, conn := range replicaConn {
-		(*conn).Write(buff)
+		_, err := (*conn).Write(buff)
+		if err != nil {
+			fmt.Printf("Failed to stream to replica %s: %s", (*conn).RemoteAddr().String(), err.Error())
+		}
 	}
+}
+
+func shouldReply(conn *net.Conn, serverState *types.ServerState) bool {
+	// If the command is from master, then we should not reply as it is a propogated command
+	connectionHost := (*conn).RemoteAddr().String()
+	connectionPort := (*conn).LocalAddr().String()
+	fmt.Println("Connection Host:", connectionHost)
+	fmt.Println("Connection Port:", connectionPort)
+	return true
 }

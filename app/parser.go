@@ -21,13 +21,15 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState) {
 		return
 	}
 
+	fmt.Println("Command received: ", arr)
+
 	switch strings.ToUpper(arr[0]) {
 	case "PING":
 		cmd.Ping(conn)
 	case "ECHO":
 		cmd.Echo(conn, arr[1])
 	case "SET":
-		cmd.Set(conn, &state.DB, arr[1:]...)
+		cmd.Set(conn, &state.DB, shouldReply(&conn, state), arr[1:]...)
 		streamToReplicas(state.ReplicaConn, buf)
 	case "GET":
 		cmd.Get(conn, &state.DB, arr[1])
