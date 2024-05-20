@@ -16,12 +16,15 @@ func sendAndAssertReply(conn net.Conn, messageArr []string, expectedMsg string, 
 
 	resp := make([]byte, 1024)
 	n, _ := conn.Read(resp)
-	msg, err := respHandler.Str.Decode(resp[:n])
+	msg, remain, err := respHandler.Str.Decode(resp[:n])
 	if err != nil {
 		return fmt.Errorf("failed to decode response: %s", err)
 	}
 	if msg != expectedMsg {
 		return fmt.Errorf("expected +OK, got %s", string(resp[:n]))
+	}
+	if len(remain) > 0 {
+		return fmt.Errorf("unexpected remaining (buffered) bytes: %q", remain)
 	}
 
 	return nil
@@ -37,7 +40,7 @@ func sendAndGetRBDFile(conn net.Conn, messageArr []string, respHandler resp.RESP
 	if err != nil {
 		return "", fmt.Errorf("failed to recieve message from master: %s", err)
 	}
-	psyncResp, err := respHandler.Str.Decode(resp[:n])
+	psyncResp, rdbBytes, err := respHandler.Str.Decode(resp[:n])
 	if err != nil {
 		return "", fmt.Errorf("failed to decode response: %s", err)
 	}
@@ -57,11 +60,13 @@ func sendAndGetRBDFile(conn net.Conn, messageArr []string, respHandler resp.RESP
 	}
 	state.MasterReplOffset = portAsInt
 
-	// Get the RDB file
-	rdbBytes := make([]byte, 1024)
-	n, err = conn.Read(rdbBytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to recieve message from master: %s", err)
+	if rdbBytes == nil {
+		// Get the RDB file
+		rdbBytes = make([]byte, 1024)
+		n, err = conn.Read(rdbBytes)
+		if err != nil {
+			return "", fmt.Errorf("failed to recieve message from master: %s", err)
+		}
 	}
 	fileContent := string(rdbBytes[:n])
 

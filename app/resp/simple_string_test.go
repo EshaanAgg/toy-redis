@@ -57,13 +57,14 @@ func TestStrDecode(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			respHandler := resp.RESPHandler{}
-			res, err := respHandler.Str.Decode(tc.input)
+			res, remain, err := respHandler.Str.Decode(tc.input)
 
 			if tc.shouldError {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tc.expected, res)
+				assert.Equal(t, len(remain), 0)
 			}
 		})
 	}

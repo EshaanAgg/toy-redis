@@ -15,21 +15,19 @@ func (simpleString) Encode(s string) ([]byte, error) {
 	return []byte("+" + s + "\r\n"), nil
 }
 
-func (simpleString) Decode(b []byte) (string, error) {
+func (simpleString) Decode(b []byte) (string, []byte, error) {
 	if b[0] != '+' {
-		return "", fmt.Errorf("invalid format for simple string: Expected the first byte to be '+', got '%c'", b[0])
+		return "", nil, fmt.Errorf("invalid format for simple string: expected the first byte to be '+', got %q", b[0])
 	}
 
-	err := checkLastTwoBytes(b)
-	if err != nil {
-		return "", err
-	}
-
-	for i := 1; i < len(b)-2; i++ {
-		if b[i] == '\r' || b[i] == '\n' {
-			return "", fmt.Errorf("invalid format for simple string: The string content contains %c, which is not allowed", b[i])
+	for i := 1; i < len(b); i++ {
+		if b[i] == '\r' {
+			if i+1 < len(b) && b[i+1] == '\n' {
+				return string(b[1:i]), b[i+2:], nil
+			}
+			return "", nil, fmt.Errorf("invalid format for simple string: expected the last two bytes to be \\r\\n, got %q", b[i:])
 		}
 	}
 
-	return string(b[1 : len(b)-2]), nil
+	return "", nil, fmt.Errorf("invalid format for simple string: expected the last two bytes to be \\r\\n, got %q", b[len(b)-1:])
 }

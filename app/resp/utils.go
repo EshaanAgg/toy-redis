@@ -5,14 +5,6 @@ import (
 	"strconv"
 )
 
-// checkLastTwoBytes checks if the last two bytes of the byte slice are '\r\n'
-func checkLastTwoBytes(b []byte) error {
-	if b[len(b)-2] == '\r' && b[len(b)-1] == '\n' {
-		return nil
-	}
-	return fmt.Errorf("invalid format for simple string: expected the last two bytes to be \\r\\n, but got %q", b[len(b)-1:])
-}
-
 // Parses the length of the string from the byte slice and returns the length and the remaining byte slice
 func parseLen(b []byte) (int, []byte, error) {
 	lenStr := ""
