@@ -5,6 +5,7 @@ type RESPHandler struct {
 	BulkStr bulkString
 	Array   array
 	Nil     nilValue
+	Int     integer
 }
 
 func (h RESPHandler) DecodeCommand(b []byte) ([]string, []byte, error) {
