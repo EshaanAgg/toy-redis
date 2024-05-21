@@ -17,6 +17,7 @@ func Get(con net.Conn, db *map[string]types.DBItem, mutex *sync.Mutex, key strin
 	if !ok {
 		res := respHandler.Nil.Encode()
 		con.Write(res)
+		return
 	}
 
 	if value.Expiry == -1 || time.Now().UnixMilli() < value.Expiry {

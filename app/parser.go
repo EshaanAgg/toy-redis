@@ -17,6 +17,7 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	restHandler := resp.RESPHandler{}
 
 	arr, next, err := restHandler.DecodeCommand(buf)
+	buf = buf[:len(buf)-len(next)]
 	if err != nil {
 		fmt.Printf("Error decoding command: %v\n", err)
 		return
@@ -36,7 +37,8 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 		toReply := !isMasterCommand
 		cmd.Set(conn, &state.DB, &state.DBMutex, toReply, arr[1:]...)
 		if state.Role == "master" {
-			streamToReplicas(state.ReplicaConn, buf)
+			state.BytesSent += len(buf)
+			streamToReplicas(state.Replicas, buf)
 		}
 
 	case "GET":
@@ -60,7 +62,7 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 
 	// If this was a command from master, update the acknowledgment offset
 	if isMasterCommand {
-		state.AckOffset += len(buf) - len(next)
+		state.AckOffset += len(buf)
 	}
 
 	// If there are more commands in the buffer, handle them

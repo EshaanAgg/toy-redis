@@ -172,12 +172,12 @@ func handshakeWithMaster(server *types.ServerState) {
 	}
 }
 
-func streamToReplicas(replicaConn []*net.Conn, buff []byte) {
-	fmt.Printf("Streaming recieved command to %d replicas\n", len(replicaConn))
-	for _, conn := range replicaConn {
-		_, err := (*conn).Write(buff)
+func streamToReplicas(replicas []types.Replica, buff []byte) {
+	fmt.Printf("Streaming recieved command to %d replicas\n", len(replicas))
+	for ind, r := range replicas {
+		_, err := r.Conn.Write(buff)
 		if err != nil {
-			fmt.Printf("Failed to stream to replica %s: %s", (*conn).RemoteAddr().String(), err.Error())
+			fmt.Printf("Failed to stream to replica %d: %s", ind+1, err.Error())
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package types
 
 import (
-	"net"
 	"sync"
 )
 
@@ -15,11 +14,12 @@ type ServerState struct {
 	DBMutex sync.Mutex
 	Port    int
 
-	Role             string      // master | slave
-	MasterReplID     string      // Replication ID of the master (own replication ID if master)
-	MasterReplOffset int         // Offset of the master (0 if master)
-	MasterHost       string      // Host of the master (empty if master)
-	MasterPort       string      // Port of the master (empty if master)
-	ReplicaConn      []*net.Conn // Connections to replicas (empty if slave)
-	AckOffset        int         // Offset of the last acknowledged replication message
+	Role             string    // master | slave
+	MasterReplID     string    // Replication ID of the master (own replication ID if master)
+	MasterReplOffset int       // Offset of the master (0 if master)
+	MasterHost       string    // Host of the master (empty if master)
+	MasterPort       string    // Port of the master (empty if master)
+	Replicas         []Replica // Connections to replicas (empty if slave)
+	AckOffset        int       // Offset of the last acknowledged replication message (only for slaves)
+	BytesSent        int       // Number of bytes sent to replicas (only for masters)
 }
