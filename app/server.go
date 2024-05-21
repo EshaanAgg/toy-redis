@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/codecrafters-io/redis-starter-go/app/file"
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
@@ -30,6 +31,10 @@ func NewServerState(args *Args) *types.ServerState {
 		state.MasterReplID = "?"
 		state.MasterReplOffset = -1
 		handshakeWithMaster(&state)
+	}
+
+	if args.dir != "" && args.dbfilename != "" {
+		file.InitialiseDB(&state, args.dbfilename, args.dir)
 	}
 
 	return &state

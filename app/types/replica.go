@@ -19,7 +19,7 @@ func (r *Replica) GetAcknowlegment() error {
 	messageBytes := respHandler.Array.Encode([]string{"REPLCONF", "GETACK", "*"})
 	_, err := r.Conn.Write(messageBytes)
 	if err != nil {
-		return fmt.Errorf("failed to write to replica connection: %v", err)
+		return fmt.Errorf("failed to write GETACK command to replica connection: %v", err)
 	}
 
 	return nil

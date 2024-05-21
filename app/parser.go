@@ -59,6 +59,9 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	case "CONFIG":
 		cmd.Config(conn, state, arr[1:]...)
 
+	case "KEYS":
+		cmd.Keys(conn, state, arr[1:]...)
+
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}
