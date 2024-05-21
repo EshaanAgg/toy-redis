@@ -18,6 +18,9 @@ func NewServerState(args *Args) *types.ServerState {
 		Role:             "master",
 		MasterReplID:     "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb",
 		MasterReplOffset: 0,
+
+		DBDir:      args.dir,
+		DBFilename: args.dbfilename,
 	}
 
 	if args.replicaof != "" {
@@ -28,6 +31,7 @@ func NewServerState(args *Args) *types.ServerState {
 		state.MasterReplOffset = -1
 		handshakeWithMaster(&state)
 	}
+
 	return &state
 }
 

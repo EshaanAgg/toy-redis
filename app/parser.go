@@ -56,6 +56,9 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	case "WAIT":
 		cmd.Wait(conn, state, arr[1:]...)
 
+	case "CONFIG":
+		cmd.Config(conn, state, arr[1:]...)
+
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}

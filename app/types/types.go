@@ -14,6 +14,9 @@ type ServerState struct {
 	DBMutex sync.Mutex
 	Port    int
 
+	DBDir      string // Directory in which to store the database files
+	DBFilename string // Name of the database file
+
 	Role             string    // master | slave
 	MasterReplID     string    // Replication ID of the master (own replication ID if master)
 	MasterReplOffset int       // Offset of the master (0 if master)
