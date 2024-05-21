@@ -2,6 +2,7 @@ package file
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
@@ -258,10 +259,12 @@ func parseFile(data []byte, serverState *types.ServerState) error {
 		}
 		fmt.Printf("Key: %s, Value: %s, Expiry: %d\n", key, dbItem.Value, dbItem.Expiry)
 
-		// Store the key-value pair in the database
-		serverState.DBMutex.Lock()
-		serverState.DB[key] = dbItem
-		serverState.DBMutex.Unlock()
+		// Store the key-value pair in the database if it is not expired
+		if dbItem.Expiry == -1 || dbItem.Expiry > time.Now().UnixMilli() {
+			serverState.DBMutex.Lock()
+			serverState.DB[key] = dbItem
+			serverState.DBMutex.Unlock()
+		}
 
 		data = remainData
 	}
