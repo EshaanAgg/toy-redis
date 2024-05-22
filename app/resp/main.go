@@ -6,6 +6,7 @@ type RESPHandler struct {
 	Array   array
 	Nil     nilValue
 	Int     integer
+	Err     errorValue
 }
 
 func (h RESPHandler) DecodeCommand(b []byte) ([]string, []byte, error) {
