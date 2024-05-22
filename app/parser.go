@@ -68,6 +68,9 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	case "XADD":
 		cmd.Xadd(conn, state, arr[1:]...)
 
+	case "XRANGE":
+		cmd.Xrange(conn, state, arr[1:]...)
+
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}
