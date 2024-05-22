@@ -35,7 +35,7 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 
 	case "SET":
 		toReply := !isMasterCommand
-		cmd.Set(conn, &state.DB, &state.DBMutex, toReply, arr[1:]...)
+		cmd.Set(conn, state, toReply, arr[1:]...)
 		if state.Role == "master" {
 			state.BytesSent += len(buf)
 			streamToReplicas(state.Replicas, buf)
@@ -64,6 +64,9 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 
 	case "TYPE":
 		cmd.Type(conn, state, arr[1:]...)
+
+	case "XADD":
+		cmd.Xadd(conn, state, arr[1:]...)
 
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])

@@ -37,6 +37,9 @@ func NewServerState(args *Args) *types.ServerState {
 		file.InitialiseDB(&state, args.dbfilename, args.dir)
 	}
 
+	// Initialise the streams map
+	state.Streams = map[string][]types.StreamEntry{}
+
 	return &state
 }
 

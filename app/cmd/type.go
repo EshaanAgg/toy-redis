@@ -14,13 +14,18 @@ func Type(conn net.Conn, server *types.ServerState, args ...string) {
 	}
 
 	key := args[0]
-	_, ok := server.DB[key]
+	_, okString := server.DB[key]
+	_, okStream := server.Streams[key]
 
 	var keyType string
-	if !ok {
+	if !okString && !okStream {
 		keyType = "none"
-	} else {
+	} else if okString && !okStream {
 		keyType = "string"
+	} else if okStream && !okString {
+		keyType = "stream"
+	} else {
+		panic("Key is both a string and a stream!")
 	}
 
 	messageBytes, err := respHandler.Str.Encode(keyType)

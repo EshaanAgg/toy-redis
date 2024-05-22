@@ -9,8 +9,14 @@ type DBItem struct {
 	Expiry int64
 }
 
+type StreamEntry struct {
+	ID  string
+	KVs map[string]string
+}
+
 type ServerState struct {
 	DB      map[string]DBItem
+	Streams map[string][]StreamEntry
 	DBMutex sync.Mutex
 	Port    int
 
