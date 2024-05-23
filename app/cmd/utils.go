@@ -54,6 +54,11 @@ func EncodeStreamEntry(entry types.StreamEntry) ([]byte, error) {
 }
 
 func EncodeStreamResult(result StreamResult) ([]byte, error) {
+	// If the stream does not exist or if there are no entries, then return nil
+	if result.StreamKey == "" || len(result.StreamEntries) == 0 {
+		return nil, nil
+	}
+
 	encodedBytes := []byte(fmt.Sprintf("*%d\r\n", 2))
 
 	// Add the stream key to the encoded bytes
@@ -73,6 +78,9 @@ func EncodeStreamResult(result StreamResult) ([]byte, error) {
 	return encodedBytes, nil
 }
 
+// If any stream result does not exist (i.e. StreamKey is empty or there are 0 StreamEntries),
+// then the whole result is returned as NIL
+// Otherwise the result is encoded as an array of stream results
 func EncodeStreamResultArray(results []StreamResult) ([]byte, error) {
 	encodedBytes := []byte(fmt.Sprintf("*%d\r\n", len(results)))
 
@@ -80,6 +88,11 @@ func EncodeStreamResultArray(results []StreamResult) ([]byte, error) {
 		encodedResult, err := EncodeStreamResult(result)
 		if err != nil {
 			return nil, fmt.Errorf("failed to encode result: %v", err)
+		}
+		// If the encoded result is nil, then return nil
+		if encodedResult == nil {
+			nilBytes := respHandler.Nil.Encode()
+			return nilBytes, nil
 		}
 		encodedBytes = append(encodedBytes, encodedResult...)
 	}

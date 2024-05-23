@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
@@ -19,6 +20,16 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 	if len(args) < 3 {
 		fmt.Printf("Expected atleast 3 arguments for 'XREAD' command, got %v\n", args)
 		return
+	}
+
+	if strings.ToUpper(args[0]) == "BLOCK" {
+		timeToBlock, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Printf("Failed to parse time to block: %v\n", err)
+			return
+		}
+		time.Sleep(time.Duration(timeToBlock) * time.Millisecond)
+		args = args[2:]
 	}
 
 	if strings.ToUpper(args[0]) != "STREAMS" {
@@ -39,12 +50,8 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 		streamKey := args[i]
 		stream, ok := server.Streams[streamKey]
 
-		// If the stream does not exist, add an empty result
+		// If the stream does not exist, then skip it
 		if !ok {
-			result[i] = StreamResult{
-				StreamKey:     streamKey,
-				StreamEntries: []types.StreamEntry{},
-			}
 			continue
 		}
 
