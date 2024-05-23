@@ -71,6 +71,9 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	case "XRANGE":
 		cmd.Xrange(conn, state, arr[1:]...)
 
+	case "XREAD":
+		cmd.Xread(conn, state, arr[1:]...)
+
 	default:
 		fmt.Printf("Unknown command: %s\n", arr[0])
 	}
