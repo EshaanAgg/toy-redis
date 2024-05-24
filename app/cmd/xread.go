@@ -22,21 +22,18 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 		return
 	}
 
+	toBlock := false
+	timeToBlock := -1
+
 	if strings.ToUpper(args[0]) == "BLOCK" {
-		timeToBlock, err := strconv.Atoi(args[1])
+		time, err := strconv.Atoi(args[1])
 		if err != nil {
 			fmt.Printf("Failed to parse time to block: %v\n", err)
 			return
 		}
 		args = args[2:]
-
-		if timeToBlock == 0 {
-			fmt.Println("Blocking till new result is available for the stream")
-			blockTillNewResult(server, args)
-			fmt.Println("New result available for the stream")
-		} else {
-			time.Sleep(time.Duration(timeToBlock) * time.Millisecond)
-		}
+		toBlock = true
+		timeToBlock = time
 	}
 
 	if strings.ToUpper(args[0]) != "STREAMS" {
@@ -50,7 +47,22 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 		return
 	}
 
+	existingResult := getStreamResults(server, args)
+	if toBlock {
+		if timeToBlock == 0 {
+			blockTillNewResult(server, args, existingResult)
+		} else {
+			time.Sleep(time.Duration(timeToBlock) * time.Millisecond)
+		}
+	}
+
 	result := getStreamResults(server, args)
+	for i := len(args) / 2; i < len(args); i++ {
+		if args[i] == "$" {
+			result = getNewResults(existingResult, result)
+			break
+		}
+	}
 
 	// Encode the result and write it to the connection
 	encodedResult, err := EncodeStreamResultArray(result)
@@ -64,26 +76,55 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 	}
 }
 
-func blockTillNewResult(server *types.ServerState, args []string) {
-	if strings.ToUpper(args[0]) != "STREAMS" {
-		panic(fmt.Sprintf("Expected 'STREAMS' as first argument for 'XREAD' command, got %v\n", args[0]))
+func getNewResults(baseResult []StreamResult, newResult []StreamResult) []StreamResult {
+	var result []StreamResult
+
+	for _, newStreamResult := range newResult {
+		found := false
+
+		for _, baseStreamResult := range baseResult {
+			if newStreamResult.StreamKey == baseStreamResult.StreamKey {
+				found = true
+				result = append(result, StreamResult{
+					StreamKey:     newStreamResult.StreamKey,
+					StreamEntries: getNewStreamEntries(baseStreamResult.StreamEntries, newStreamResult.StreamEntries),
+				})
+			}
+		}
+
+		if !found {
+			result = append(result, newStreamResult)
+		}
 	}
-	args = args[1:]
+	return result
+}
 
-	if len(args)%2 != 0 {
-		panic(fmt.Sprintf("Expected even number of arguments after 'STREAMS' for 'XREAD' command, got %v\n", args[1:]))
+func getNewStreamEntries(baseStreamEntries []types.StreamEntry, newStreamEntries []types.StreamEntry) []types.StreamEntry {
+	var result []types.StreamEntry
+
+	for _, newStreamEntry := range newStreamEntries {
+		found := false
+		for _, baseStreamEntry := range baseStreamEntries {
+			if newStreamEntry.ID == baseStreamEntry.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, newStreamEntry)
+		}
 	}
 
-	baseResult := getStreamResults(server, args)
+	return result
+}
 
-	// Block till a new result is available
+func blockTillNewResult(server *types.ServerState, args []string, baseResult []StreamResult) {
 	for {
 		result := getStreamResults(server, args)
 		if !isSameResult(baseResult, result) {
 			return
 		}
-		// Sleep for 20 milliseconds before checking again
-		// This is to avoid busy waiting
+		// Sleep for 20 milliseconds before checking again to avoid busy waiting
 		time.Sleep(20 * time.Millisecond)
 	}
 }
@@ -136,7 +177,14 @@ func getStreamResults(server *types.ServerState, args []string) []StreamResult {
 		}
 
 		startKey := args[i+numberOfStreams]
-		streamEntries := fetchFromStreamTillEnd(stream, startKey)
+
+		var streamEntries []types.StreamEntry
+		if startKey == "$" {
+			streamEntries = stream
+		} else {
+			streamEntries = fetchFromStreamTillEnd(stream, startKey)
+		}
+
 		result[i] = StreamResult{
 			StreamKey:     streamKey,
 			StreamEntries: streamEntries,
