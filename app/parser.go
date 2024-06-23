@@ -44,6 +44,9 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	case "GET":
 		cmd.Get(conn, &state.DB, &state.DBMutex, arr[1])
 
+	case "INCR":
+		cmd.Incr(conn, &state.DB, arr[1])
+
 	case "INFO":
 		cmd.Info(conn, state)
 
