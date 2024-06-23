@@ -29,6 +29,7 @@ func Incr(conn net.Conn, db *map[string]types.DBItem, key string) {
 		if err != nil {
 			fmt.Printf("Error encoding response: %s\n", err)
 		}
+		return
 	}
 
 	(*db)[key] = types.DBItem{
