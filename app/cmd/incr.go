@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 	"strconv"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Incr(conn net.Conn, db *map[string]types.DBItem, key string) {
+func Incr(db *map[string]types.DBItem, key string) []byte {
 	val, ok := (*db)[key]
 	if !ok {
 		(*db)[key] = types.DBItem{
@@ -16,28 +15,17 @@ func Incr(conn net.Conn, db *map[string]types.DBItem, key string) {
 			Expiry: -1,
 		}
 
-		_, err := conn.Write(respHandler.Int.Encode(1))
-		if err != nil {
-			fmt.Printf("Error encoding response: %s\n", err)
-		}
-		return
+		return respHandler.Int.Encode(1)
 	}
 
 	i, err := strconv.Atoi(val.Value)
 	if err != nil {
-		_, err = conn.Write(respHandler.Err.Encode(("ERR value is not an integer or out of range")))
-		if err != nil {
-			fmt.Printf("Error encoding response: %s\n", err)
-		}
-		return
+		return respHandler.Err.Encode(("ERR value is not an integer or out of range"))
 	}
 
 	(*db)[key] = types.DBItem{
-		Value:  strconv.Itoa(i + 1),
+		Value:  fmt.Sprint(i + 1),
 		Expiry: val.Expiry,
 	}
-	_, err = conn.Write(respHandler.Int.Encode(i + 1))
-	if err != nil {
-		fmt.Printf("Error encoding response: %s\n", err)
-	}
+	return respHandler.Int.Encode(i + 1)
 }

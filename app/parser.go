@@ -23,62 +23,15 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 		return
 	}
 
-	fmt.Println("Command received: ", arr)
-
-	switch strings.ToUpper(arr[0]) {
-
-	case "PING":
-		cmd.Ping(conn, isMasterCommand)
-
-	case "ECHO":
-		cmd.Echo(conn, arr[1])
-
-	case "SET":
-		toReply := !isMasterCommand
-		cmd.Set(conn, state, toReply, arr[1:]...)
-		if state.Role == "master" {
-			state.BytesSent += len(buf)
-			streamToReplicas(state.Replicas, buf)
+	responseBytes := getCommandResponse(conn, state, arr, buf, isMasterCommand)
+	if responseBytes == nil {
+		fmt.Println("No response to send to the client")
+	} else {
+		_, err := conn.Write(responseBytes)
+		if err != nil {
+			fmt.Printf("Error writing response to client: %v\n", err)
 		}
-
-	case "GET":
-		cmd.Get(conn, &state.DB, &state.DBMutex, arr[1])
-
-	case "INCR":
-		cmd.Incr(conn, &state.DB, arr[1])
-
-	case "INFO":
-		cmd.Info(conn, state)
-
-	case "REPLCONF":
-		cmd.ReplConf(conn, arr[1:], state)
-
-	case "PSYNC":
-		cmd.Psync(conn, state.MasterReplID, state.MasterReplOffset)
-
-	case "WAIT":
-		cmd.Wait(conn, state, arr[1:]...)
-
-	case "CONFIG":
-		cmd.Config(conn, state, arr[1:]...)
-
-	case "KEYS":
-		cmd.Keys(conn, state, arr[1:]...)
-
-	case "TYPE":
-		cmd.Type(conn, state, arr[1:]...)
-
-	case "XADD":
-		cmd.Xadd(conn, state, arr[1:]...)
-
-	case "XRANGE":
-		cmd.Xrange(conn, state, arr[1:]...)
-
-	case "XREAD":
-		cmd.Xread(conn, state, arr[1:]...)
-
-	default:
-		fmt.Printf("Unknown command: %s\n", arr[0])
+		fmt.Printf("Sent %d bytes to client: %q\n", len(responseBytes), responseBytes)
 	}
 
 	// If this was a command from master, update the acknowledgment offset
@@ -90,4 +43,70 @@ func handleCommand(buf []byte, conn net.Conn, state *types.ServerState, isMaster
 	if len(next) > 0 {
 		handleCommand(next, conn, state, isMasterCommand)
 	}
+}
+
+// Executes the command and returns the response in the RESP format
+// Returns nil if no response is to be sent to the client
+// PSYNC, REPLCONF, WAIT are special commands that are handled by the cmd package directly, and thus their response is nil
+func getCommandResponse(conn net.Conn, state *types.ServerState, arr []string, buf []byte, isMasterCommand bool) []byte {
+	fmt.Println("Command received: ", arr)
+
+	var res []byte = nil
+
+	switch strings.ToUpper(arr[0]) {
+	case "PING":
+		res = cmd.Ping(isMasterCommand)
+
+	case "ECHO":
+		res = cmd.Echo(arr[1])
+
+	case "SET":
+		toReply := !isMasterCommand
+		res = cmd.Set(state, toReply, arr[1:]...)
+		if state.Role == "master" {
+			state.BytesSent += len(buf)
+			streamToReplicas(state.Replicas, buf)
+		}
+
+	case "GET":
+		res = cmd.Get(&state.DB, &state.DBMutex, arr[1])
+
+	case "INCR":
+		res = cmd.Incr(&state.DB, arr[1])
+
+	case "INFO":
+		res = cmd.Info(state)
+
+	case "REPLCONF":
+		cmd.ReplConf(conn, arr[1:], state)
+
+	case "PSYNC":
+		cmd.Psync(conn, state.MasterReplID, state.MasterReplOffset)
+
+	case "WAIT":
+		cmd.Wait(conn, state, arr[1:]...)
+
+	case "CONFIG":
+		res = cmd.Config(state, arr[1:]...)
+
+	case "KEYS":
+		res = cmd.Keys(state, arr[1:]...)
+
+	case "TYPE":
+		res = cmd.Type(state, arr[1:]...)
+
+	case "XADD":
+		res = cmd.Xadd(state, arr[1:]...)
+
+	case "XRANGE":
+		res = cmd.Xrange(state, arr[1:]...)
+
+	case "XREAD":
+		res = cmd.Xread(state, arr[1:]...)
+
+	default:
+		fmt.Printf("Unknown command: %s\n", arr[0])
+	}
+
+	return res
 }

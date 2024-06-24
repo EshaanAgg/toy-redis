@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -15,11 +14,12 @@ type StreamResult struct {
 	StreamEntries []types.StreamEntry
 }
 
-func Xread(conn net.Conn, server *types.ServerState, args ...string) {
+func Xread(server *types.ServerState, args ...string) []byte {
 	// Validate the number of arguments
 	if len(args) < 3 {
-		fmt.Printf("Expected atleast 3 arguments for 'XREAD' command, got %v\n", args)
-		return
+		return respHandler.Err.Encode(
+			fmt.Sprintf("ERR wrong number of arguments for '%s' command, expected at least 3, for %d", args[0], len(args)),
+		)
 	}
 
 	toBlock := false
@@ -28,8 +28,9 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 	if strings.ToUpper(args[0]) == "BLOCK" {
 		time, err := strconv.Atoi(args[1])
 		if err != nil {
-			fmt.Printf("Failed to parse time to block: %v\n", err)
-			return
+			return respHandler.Err.Encode(
+				fmt.Sprintf("ERR failed to parse time to block: %v", err),
+			)
 		}
 		args = args[2:]
 		toBlock = true
@@ -37,14 +38,16 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 	}
 
 	if strings.ToUpper(args[0]) != "STREAMS" {
-		fmt.Printf("Expected 'STREAMS' as first argument for 'XREAD' command, got %v\n", args[0])
-		return
+		return respHandler.Err.Encode(
+			fmt.Sprintf("ERR expected 'STREAMS' as first argument for 'XREAD' command, got %v\n", args[0]),
+		)
 	}
 
 	args = args[1:]
 	if len(args)%2 != 0 {
-		fmt.Printf("Expected even number of arguments after 'STREAMS' for 'XREAD' command, got %v\n", args[1:])
-		return
+		return respHandler.Err.Encode(
+			fmt.Sprintf("ERR expected even number of arguments after 'STREAMS' for 'XREAD' command, got %v\n", args[1:]),
+		)
 	}
 
 	existingResult := getStreamResults(server, args)
@@ -68,12 +71,9 @@ func Xread(conn net.Conn, server *types.ServerState, args ...string) {
 	encodedResult, err := EncodeStreamResultArray(result)
 	if err != nil {
 		fmt.Printf("Failed to encode result: %v\n", err)
-		return
+		return nil
 	}
-	_, err = conn.Write(encodedResult)
-	if err != nil {
-		fmt.Printf("Failed to write result to connection: %v\n", err)
-	}
+	return encodedResult
 }
 
 func getNewResults(baseResult []StreamResult, newResult []StreamResult) []StreamResult {

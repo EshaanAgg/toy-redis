@@ -13,3 +13,7 @@ All of the implementations are based on the actual Redis protocols and thus are 
 
 To find a detailed descirption of the capacilities of this Redis implementation, head over to the [Codecrafters' course](https://app.codecrafters.io/courses/redis/overview)!
 
+
+## Running Locally
+
+You can spawn the Redis server instances by using the [`spawn_redis_server.sh`](./spawn_redis_server.sh) shell script with the appropiate arguments. To test the same, you can use the client, and start the same by using `go run client/main.go --port PORT` where `PORT` is the port of the local Redis server. It defaults to `6379`.

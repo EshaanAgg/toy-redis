@@ -1,31 +1,26 @@
 package cmd
 
 import (
-	"net"
 	"sync"
 	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Get(con net.Conn, db *map[string]types.DBItem, mutex *sync.Mutex, key string) {
+func Get(db *map[string]types.DBItem, mutex *sync.Mutex, key string) []byte {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	value, ok := (*db)[key]
 
 	if !ok {
-		res := respHandler.Nil.Encode()
-		con.Write(res)
-		return
+		return respHandler.Nil.Encode()
 	}
 
 	if value.Expiry == -1 || time.Now().UnixMilli() < value.Expiry {
-		res := respHandler.BulkStr.Encode(value.Value)
-		con.Write(res)
-		return
+		return respHandler.BulkStr.Encode(value.Value)
 	}
 
 	delete(*db, key)
-	con.Write(respHandler.Nil.Encode())
+	return respHandler.Nil.Encode()
 }

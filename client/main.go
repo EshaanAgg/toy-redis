@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 3000, "The port on which the Redis server listens to")
+	port := flag.Int("port", 6379, "The port on which the Redis server listens to")
 	flag.Parse()
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", *port))
@@ -25,10 +25,28 @@ func main() {
 	fmt.Println("Connected successfully to the Redis server.")
 	respHandler := resp.RESPHandler{}
 
-	// Start the REPL and handle communication with the server
-	for {
-		fmt.Printf("> ")
+	// Start a goroutine to RECEIVE responses from the server
+	go func() {
+		for {
+			buffer := make([]byte, 1024)
+			n, err := conn.Read(buffer)
+			if err != nil {
+				fmt.Printf("There was an error in recieving the message: %v\n", err)
+				continue
+			}
 
+			res, err := respHandler.DecodeResponse(buffer[:n])
+			if err != nil {
+				fmt.Printf("There was an error in decoding the response: %v\n", err)
+				continue
+			}
+
+			fmt.Printf("> '%s'\n", res)
+		}
+	}()
+
+	// Handle SENDing commands to the server in the main goroutine
+	for {
 		in := bufio.NewReader(os.Stdin)
 		cmd, err := in.ReadString('\n')
 		if err != nil {
@@ -42,20 +60,5 @@ func main() {
 			fmt.Printf("There was an error in sending the message: %v\n", err)
 			continue
 		}
-
-		buffer := make([]byte, 1024)
-		n, err := conn.Read(buffer)
-		if err != nil {
-			fmt.Printf("There was an error in recieving the message: %v\n", err)
-			continue
-		}
-
-		res, err := respHandler.DecodeResponse(buffer[:n])
-		if err != nil {
-			fmt.Printf("There was an error in decoding the response: %v\n", err)
-			continue
-		}
-
-		fmt.Printf(">> %s\n", res)
 	}
 }

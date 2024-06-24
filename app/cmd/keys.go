@@ -2,15 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Keys(conn net.Conn, server *types.ServerState, args ...string) {
+func Keys(server *types.ServerState, args ...string) []byte {
 	if len(args) != 1 || args[0] != "*" {
-		fmt.Printf("Invalid number of arguments for 'KEYS' command: %v\n", args)
-		return
+		return respHandler.Err.Encode(
+			fmt.Sprintf("ERR invalid number of arguments for 'KEYS' command: %v\n", args),
+		)
 	}
 
 	keys := make([]string, 0)
@@ -18,9 +18,5 @@ func Keys(conn net.Conn, server *types.ServerState, args ...string) {
 		keys = append(keys, key)
 	}
 
-	messageBytes := respHandler.Array.Encode(keys)
-	_, err := conn.Write(messageBytes)
-	if err != nil {
-		fmt.Println("Error writing response to connection: ", err)
-	}
+	return respHandler.Array.Encode(keys)
 }

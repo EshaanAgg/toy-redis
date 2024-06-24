@@ -2,40 +2,33 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Xrange(conn net.Conn, server *types.ServerState, args ...string) {
+func Xrange(server *types.ServerState, args ...string) []byte {
 	// Validate the number of arguments
 	if len(args) < 3 {
-		fmt.Printf("Expected atleast 3 arguments for 'XRANGE' command, got %v\n", args)
-		return
+		return respHandler.Err.Encode(
+			fmt.Sprintf("ERR wrong number of arguments for '%s' command, expected at least 3, for %d", args[0], len(args)),
+		)
 	}
 
 	streamKey := args[0]
 	stream, ok := server.Streams[streamKey]
 	if !ok {
-		_, err := conn.Write(respHandler.Array.Encode([]string{}))
-		if err != nil {
-			fmt.Printf("Error writing response: %s\n", err)
-		}
-		return
+		return respHandler.Array.Encode([]string{})
 	}
 
 	items := fetchFromStream(stream, args[1], args[2])
 	encodedItems, err := EncodeStreamEntrySlice(items)
 	if err != nil {
 		fmt.Printf("Error encoding stream entries: %s\n", err)
-		return
+		return nil
 	}
-	_, err = conn.Write(encodedItems)
-	if err != nil {
-		fmt.Printf("Error writing response: %s\n", err)
-	}
+	return encodedItems
 }
 
 func fetchFromStream(streams []types.StreamEntry, start string, end string) []types.StreamEntry {
