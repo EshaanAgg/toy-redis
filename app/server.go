@@ -37,8 +37,10 @@ func NewServerState(args *Args) *types.ServerState {
 		file.InitialiseDB(&state, args.dbfilename, args.dir)
 	}
 
-	// Initialise the streams map
+	// Initialise the maps in the state
+	// so that they are not nil
 	state.Streams = map[string][]types.StreamEntry{}
+	state.Transactions = map[net.Conn]types.TransactionData{}
 
 	return &state
 }

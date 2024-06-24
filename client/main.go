@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/app/resp"
 )
@@ -30,6 +32,11 @@ func main() {
 		for {
 			buffer := make([]byte, 1024)
 			n, err := conn.Read(buffer)
+			if err == io.EOF {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+
 			if err != nil {
 				fmt.Printf("There was an error in recieving the message: %v\n", err)
 				continue
