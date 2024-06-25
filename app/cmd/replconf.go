@@ -60,6 +60,7 @@ func sendAck(conn net.Conn, bytesOffset int) {
 	if err != nil {
 		fmt.Println("Failed to write response ACK response to master: ", err)
 	}
+	fmt.Printf("Sent %d bytes to client: %q\n", len(bytes), bytes)
 }
 
 func sendOk(conn net.Conn) {
@@ -72,4 +73,5 @@ func sendOk(conn net.Conn) {
 	if err != nil {
 		fmt.Println("Failed to write OK response to master: ", err)
 	}
+	fmt.Printf("Sent %d bytes to client: %q\n", len(bytes), bytes)
 }

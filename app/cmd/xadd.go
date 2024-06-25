@@ -58,12 +58,7 @@ func Xadd(server *types.ServerState, args ...string) []byte {
 	})
 
 	// Return the ID of the added item
-	res, err := respHandler.Str.Encode(validatedEntryId)
-	if err != nil {
-		fmt.Printf("Error encoding response: %s\n", err)
-		return nil
-	}
-	return res
+	return respHandler.BulkStr.Encode(validatedEntryId)
 }
 
 // getValidatedEntryID parses the provided entry ID and returns the validated entry id and an error string if any

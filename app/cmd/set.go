@@ -33,10 +33,6 @@ func Set(server *types.ServerState, shouldReply bool, arr ...string) []byte {
 	key := arr[0]
 	value := arr[1]
 
-	if checkIfKeyExists(key, server) {
-		return respHandler.Err.Encode("ERR key already exists for a key-value pair or a stream")
-	}
-
 	server.DB[key] = types.DBItem{Value: value, Expiry: expiry}
 
 	if shouldReply {

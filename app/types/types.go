@@ -36,8 +36,3 @@ type ServerState struct {
 	Transactions     map[net.Conn]TransactionData
 	TransactionMutex sync.Mutex
 }
-
-type TransactionData struct {
-	Started bool
-	Queue   [][]byte
-}
