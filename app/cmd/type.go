@@ -2,15 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Type(conn net.Conn, server *types.ServerState, args ...string) {
+func Type(server *types.ServerState, args ...string) []byte {
 	if len(args) != 1 {
-		fmt.Printf("Invalid number of arguments for 'TYPE' command: %v\n", args)
-		return
+		return respHandler.Err.Encode(
+			fmt.Sprintf("ERR wrong number of arguments for 'TYPE' command: expected 1, got %d", len(args)),
+		)
 	}
 
 	key := args[0]
@@ -25,16 +25,13 @@ func Type(conn net.Conn, server *types.ServerState, args ...string) {
 	} else if okStream && !okString {
 		keyType = "stream"
 	} else {
-		panic("Key is both a string and a stream!")
+		panic("key is both a string and a stream!")
 	}
 
 	messageBytes, err := respHandler.Str.Encode(keyType)
 	if err != nil {
 		fmt.Println("Error encoding response: ", err)
-		return
+		return nil
 	}
-	_, err = conn.Write(messageBytes)
-	if err != nil {
-		fmt.Println("Error writing response to connection: ", err)
-	}
+	return messageBytes
 }

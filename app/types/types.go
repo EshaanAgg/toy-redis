@@ -1,6 +1,7 @@
 package types
 
 import (
+	"net"
 	"sync"
 )
 
@@ -31,4 +32,7 @@ type ServerState struct {
 	Replicas         []Replica // Connections to replicas (empty if slave)
 	AckOffset        int       // Offset of the last acknowledged replication message (only for slaves)
 	BytesSent        int       // Number of bytes sent to replicas (only for masters)
+
+	Transactions     map[net.Conn]TransactionData
+	TransactionMutex sync.Mutex
 }

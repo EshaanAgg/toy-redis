@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -10,16 +9,16 @@ import (
 	"github.com/codecrafters-io/redis-starter-go/app/types"
 )
 
-func Xadd(conn net.Conn, server *types.ServerState, args ...string) {
+func Xadd(server *types.ServerState, args ...string) []byte {
 	if len(args) < 4 {
-		fmt.Printf("Expected at least 4 arguments for 'XADD' command, got %v\n", args)
-		return
+		return respHandler.Err.Encode(
+			fmt.Sprintf("ERR wrong number of arguments for '%s' command, expected at least 4, for %d", args[0], len(args)),
+		)
 	}
 
 	streamKey := args[0]
 	if checkIfExistsAsKV(streamKey, server) {
-		fmt.Printf("Key %s already exists for a key-value pair\n", streamKey)
-		return
+		return respHandler.Err.Encode("ERR key already exists for a key-value pair")
 	}
 
 	itemKey := args[1]
@@ -49,12 +48,7 @@ func Xadd(conn net.Conn, server *types.ServerState, args ...string) {
 	// If there is an error, return the error to the client
 	if validatedEntryIdErr != "" {
 		fmt.Printf("Error validating entry ID: %s\n", validatedEntryIdErr)
-		errBytes := respHandler.Err.Encode(validatedEntryIdErr)
-		_, err := conn.Write(errBytes)
-		if err != nil {
-			fmt.Printf("Error writing response: %s\n", err)
-		}
-		return
+		return respHandler.Err.Encode(validatedEntryIdErr)
 	}
 
 	// Add the entry to the stream
@@ -64,15 +58,7 @@ func Xadd(conn net.Conn, server *types.ServerState, args ...string) {
 	})
 
 	// Return the ID of the added item
-	res, err := respHandler.Str.Encode(validatedEntryId)
-	if err != nil {
-		fmt.Printf("Error encoding response: %s\n", err)
-		return
-	}
-	_, err = conn.Write(res)
-	if err != nil {
-		fmt.Printf("Error writing response: %s\n", err)
-	}
+	return respHandler.BulkStr.Encode(validatedEntryId)
 }
 
 // getValidatedEntryID parses the provided entry ID and returns the validated entry id and an error string if any
