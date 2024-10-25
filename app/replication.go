@@ -171,13 +171,3 @@ func handshakeWithMaster(server *types.ServerState) {
 		handleCommand(remainingBytes, masterConn, server, true)
 	}
 }
-
-func streamToReplicas(replicas []types.Replica, buff []byte) {
-	fmt.Printf("Streaming recieved command to %d replicas\n", len(replicas))
-	for ind, r := range replicas {
-		_, err := r.Conn.Write(buff)
-		if err != nil {
-			fmt.Printf("Failed to stream to replica %d: %s", ind+1, err.Error())
-		}
-	}
-}
